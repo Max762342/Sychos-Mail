@@ -1,0 +1,21 @@
+# Deploy-Variante OHNE eigene Domain (nur *.workers.dev).
+# Sinnvoll, solange sychos.de noch nicht in Cloudflare liegt — die Routen aus
+# wrangler.toml wuerden sonst mit "Could not find zone" abbrechen.
+#
+#   npx wrangler deploy --config wrangler.preview.toml
+#
+# Sobald die Domain bei Cloudflare ist: normales wrangler.toml benutzen.
+name = "sychos-mail"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[vars]
+APP_NAME = "Sychos Mail"
+API_ORIGIN = "https://origin.sychos.de"
