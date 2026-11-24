@@ -14,7 +14,6 @@ node_modules/
 webmail/target/
 webmail/web/build/
 webmail/web/.svelte-kit/
-worker/dist/
 worker/.wrangler/
 worker/.dry/
 worker/package-lock.json
