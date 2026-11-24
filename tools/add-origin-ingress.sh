@@ -5,7 +5,7 @@ set -euo pipefail
 PW_FILE=/tmp/sychos.pw
 SUDO() { sudo -S -p '' "$@" <"$PW_FILE"; }
 CFG=/etc/cloudflared/config.yml
-HOST=origin.sychos.com
+HOST=origin.sychos.de
 
 echo "== Backup =="
 SUDO cp "$CFG" "/etc/cloudflared/config.yml.bak-$(date +%Y%m%d-%H%M%S)"

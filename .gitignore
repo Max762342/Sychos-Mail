@@ -34,3 +34,4 @@ e2e.err
 *.log
 
 .g
+tools/cf.env

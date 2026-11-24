@@ -14,6 +14,13 @@ main = "worker/src/index.js"
 compatibility_date = "2026-11-01"
 workers_dev = true
 
+# Domain-Routen: sychos.de + www werden vom Worker bedient (Zone liegt im
+# selben Cloudflare-Konto). Muss VOR den Tabellen stehen (sonst landet es in [vars]).
+routes = [
+  { pattern = "sychos.de/*", zone_name = "sychos.de" },
+  { pattern = "www.sychos.de/*", zone_name = "sychos.de" }
+]
+
 [assets]
 directory = "worker/dist"
 binding = "ASSETS"
@@ -22,7 +29,7 @@ run_worker_first = true
 
 [vars]
 APP_NAME = "Sychos Mail"
-API_ORIGIN = "https://origin.sychos.com"
+API_ORIGIN = "https://origin.sychos.de"
 
 [observability]
 enabled = true
