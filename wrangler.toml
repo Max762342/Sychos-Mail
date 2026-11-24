@@ -32,7 +32,7 @@ APP_NAME = "Sychos Mail"
 # Tunnel-Ziel des Mailservers (cloudflared -> 127.0.0.1:8080).
 API_ORIGIN = "https://origin.sychos.de"
 # Eingehende Mail: Cloudflare Email Routing -> Worker -> Injektor (HTTPS, kein Port 25).
-INJECT_URL = "https://inject.sychos.de/inject"
+INJECT_URL = "https://370e32d77e8431.app.lhr.life/inject"
 
 [observability]
 enabled = true
