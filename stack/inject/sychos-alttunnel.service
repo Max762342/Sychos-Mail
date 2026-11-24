@@ -1,0 +1,17 @@
+[Unit]
+Description=Sychos Mail Injektor-Tunnel (localhost.run, ohne cloudflared)
+After=network-online.target sychos-inject.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+# Stabiler Tunnelname: gleiche Subdomain bei jedem Neustart
+ExecStart=/usr/bin/ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 \
+  -o ExitOnForwardFailure=yes -N -R 80:localhost:8099 nokey@localhost.run
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
