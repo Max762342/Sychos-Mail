@@ -10,6 +10,7 @@ und den Container-Status. Ergebnis:
 """
 import io
 import re
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -67,6 +68,39 @@ def dkim_record(cfg) -> str:
     parts = re.findall(r'"([^"]*)"', raw)
     value = "".join(parts) if parts else raw.replace("\n", "").replace("\t", "")
     return " ".join(value.split())
+
+
+def local_git(*args: str) -> str:
+    """Fuehrt git im Projektordner aus (fuer Repo-/Remote-Infos)."""
+    try:
+        result = subprocess.run(
+            ["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=20
+        )
+        return (result.stdout or "").strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def github_block(env: dict) -> str:
+    remote = local_git("remote", "get-url", "origin")
+    if not remote:
+        return "  (kein Git-Remote gesetzt)\n"
+    match = re.search(r"github\.com[/:]([^/]+)/([^/.]+)", remote)
+    if not match:
+        return f"  Repo: {remote}\n"
+    owner, repo = match.group(1), match.group(2)
+    web = f"https://github.com/{owner}/{repo}"
+    pages = f"https://{owner}.github.io/{repo}/"
+    return (
+        f"  Repo:     {web}\n"
+        f"  Pages:    {pages}\n"
+        f"  Actions:  {web}/actions\n"
+        f"  Secrets:  {web}/settings/secrets/actions\n"
+        f"  Deploy:   git push  (GitHub Actions baut die UI und deployt den Worker)\n"
+        f"  Secrets setzen:\n"
+        f"    gh secret set CLOUDFLARE_API_TOKEN --repo {owner}/{repo}\n"
+        f"    gh secret set CLOUDFLARE_ACCOUNT_ID --repo {owner}/{repo}\n"
+    )
 
 
 def main() -> int:
@@ -151,6 +185,9 @@ def main() -> int:
             w(f"  {name:<22} {state}\n")
     w("\n")
 
+    w("-- GITHUB (Quellcode + Cloudflare-Deploy) " + "-" * 24 + "\n")
+    w(github_block(env))
+
     w("-- DNS-EINTRAEGE (Cloudflare / IONOS) " + "-" * 29 + "\n")
     w(f"  A     mail                 {public_ip.strip()}      (DNS only, graue Wolke)\n")
     w(f"  MX    @                    {mail_host}  Prio 10   (DNS only)\n")
@@ -166,16 +203,13 @@ def main() -> int:
     w("  1. Domain sychos.de zu Cloudflare ziehen (Nameserver bei IONOS aendern).\n")
     w("  2. Auf dem Server:  cd /opt/sychos-mail/stack && bash scripts/cloudflare-setup.sh\n")
     w("     -> Tunnel fuer origin.sychos.de (API) + admin.sychos.de (Panel).\n")
-    w("  3. Webseite auf Cloudflare (Worker):\n")
-    w("       git remote add origin https://github.com/<account>/sychos-mail.git\n")
-    w("       git push -u origin main\n")
-    w("       Secrets im Repo: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID\n")
-    w("     -> GitHub Actions baut die UI und deployt sychos.de (docs/WORKER.md).\n")
-    w("  4. GitHub Pages aktivieren: Settings > Pages > Source: GitHub Actions.\n")
-    w("  5. Router: Ports 25, 465, 587, 993 -> " + local_ip + " weiterleiten\n")
+    w("  3. Cloudflare-Secrets im GitHub-Repo setzen (dann deployt Actions sychos.de):\n")
+    w("       gh secret set CLOUDFLARE_API_TOKEN --repo <owner>/sychos-mail\n")
+    w("       gh secret set CLOUDFLARE_ACCOUNT_ID --repo <owner>/sychos-mail\n")
+    w("  4. Router: Ports 25, 465, 587, 993 -> " + local_ip + " weiterleiten\n")
     w("     (FRITZ!Box: Internet > Freigaben > Portfreigaben).\n")
-    w("  6. DNS-Eintraege oben eintragen (DKIM-Wert steht dabei).\n")
-    w("  7. Echtes TLS-Zertifikat (optional): CF_TOKEN=... bash scripts/letsencrypt.sh\n\n")
+    w("  5. DNS-Eintraege oben eintragen (DKIM-Wert steht dabei).\n")
+    w("  6. Echtes TLS-Zertifikat (optional): CF_TOKEN=... bash scripts/letsencrypt.sh\n\n")
     w("Hinweis: Diese Datei enthaelt Klartext-Passwoerter. Nicht weitergeben.\n")
     w("Quelle der Postfaecher: /opt/sychos-mail/stack/credentials.log\n")
 

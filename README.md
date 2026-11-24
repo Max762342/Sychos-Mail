@@ -55,11 +55,15 @@ sychos-panel        systemd aktiv  127.0.0.1:8090   -> https://admin.sychos.de (
 * Webmail-API-Login gegen den echten Mailserver: HTTP 200 + Session-Cookie
 * Panel-Selbsttest (`bash scripts/selftest.sh`) — alle Prüfungen grün
 * DKIM-Schlüssel für `sychos.de` erzeugt (Wert steht in den Zugangsdaten unter DNS)
-* Zugangsdaten: `%USERPROFILE%\Desktop\Sychos-Mail-Zugangsdaten.txt`
+* **Worker**: 10/10 Unit-Tests, Wrangler-Dry-Run OK, E2E mit echtem Mailserver grün
+* **GitHub**: Repo öffentlich, Pages live, CI-Workflows grün
+  * Code: <https://github.com/kevu2256-design/sychos-mail>
+  * Startseite: <https://kevu2256-design.github.io/sychos-mail/>
+* Zugangsdaten: `C:\Users\Schüler\Desktop\Sychos-Mail-Zugangsdaten.txt`
 
-**Offen (braucht deine Zugänge):** Domain zu Cloudflare ziehen, Tunnel starten
-(`bash scripts/cloudflare-setup.sh`), Repo zu GitHub pushen und den Worker
-deployen (`docs/WORKER.md`), DNS-Einträge anlegen, Ports am Router freigeben.
+**Offen (braucht deine Zugänge):** Cloudflare-Secrets im Repo
+(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), Domain zu Cloudflare ziehen,
+Tunnel starten (`bash scripts/cloudflare-setup.sh`), DNS-Einträge, Ports am Router.
 Details: `docs/DEPLOY.md`, `docs/WORKER.md` und `docs/DNS.md`.
 
 ## Schnellstart (auf dem Server)

@@ -1,5 +1,10 @@
 # Webseite auf Cloudflare — Worker + GitHub
 
+**Status:** Repo <https://github.com/kevu2256-design/sychos-mail> (öffentlich),
+GitHub Pages live unter <https://kevu2256-design.github.io/sychos-mail/>.
+Der Worker ist gebaut und getestet; es fehlen nur noch die beiden
+Cloudflare-Secrets, damit `sychos.de` live geht.
+
 Ziel: `https://sychos.de` soll **auf Cloudflare laufen** (schnell, weltweit, und
 die Oberfläche ist da, auch wenn der Heimserver schläft), während die Postfächer
 weiter auf deinem Server liegen. Der Quellcode liegt auf GitHub, deployed wird
