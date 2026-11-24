@@ -90,7 +90,7 @@ def github_block(env: dict) -> str:
         return f"  Repo: {remote}\n"
     owner, repo = match.group(1), match.group(2)
     web = f"https://github.com/{owner}/{repo}"
-    pages = f"https://{owner}.github.io/{repo}/"
+    pages = f"https://{owner.lower()}.github.io/{repo}/"
     return (
         f"  Repo:     {web}\n"
         f"  Pages:    {pages}\n"
