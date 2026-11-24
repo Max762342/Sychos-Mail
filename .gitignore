@@ -28,3 +28,9 @@ wrangler-install.log
 # --- Betriebssystem ---
 .DS_Store
 Thumbs.db
+
+# Logs
+e2e.out
+e2e.err
+*.log
+

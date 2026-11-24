@@ -8,6 +8,14 @@ name = "sychos-mail"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 
+# Domain-Routen: die Webseite laeuft auf Cloudflare, der Tunnel bleibt fuer
+# origin.* (API) und admin.* (Control Panel) zustaendig.
+# Wichtig: muss VOR den Tabellen stehen, sonst landet es in [vars].
+routes = [
+  { pattern = "sychos.de/*", zone_name = "sychos.de" },
+  { pattern = "www.sychos.de/*", zone_name = "sychos.de" }
+]
+
 # Statische Dateien der Svelte-UI (aus webmail/web/build nach dist/ kopiert).
 [assets]
 directory = "./dist"
@@ -19,16 +27,8 @@ run_worker_first = true
 [vars]
 APP_NAME = "Sychos Mail"
 # Tunnel-Ziel des Mailservers (cloudflared -> 127.0.0.1:8080).
-# Kann in der Cloudflare-Konsole/Sekret überschrieben werden:
-#   npx wrangler secret put API_ORIGIN
+# Kann per Sekret ueberschrieben werden:  npx wrangler secret put API_ORIGIN
 API_ORIGIN = "https://origin.sychos.de"
-
-# Domain-Routen: die Webseite laeuft auf Cloudflare, der Tunnel bleibt fuer
-# origin.* (API) und admin.* (Control Panel) zustaendig.
-routes = [
-  { pattern = "sychos.de/*", zone_name = "sychos.de" },
-  { pattern = "www.sychos.de/*", zone_name = "sychos.de" }
-]
 
 [observability]
 enabled = true

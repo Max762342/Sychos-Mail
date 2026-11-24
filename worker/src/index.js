@@ -91,7 +91,11 @@ async function proxyApi(request, env, url) {
   if (clientIp) headers.set('x-forwarded-for', clientIp);
 
   const init = { method: request.method, headers, redirect: 'manual' };
-  if (request.method !== 'GET' && request.method !== 'HEAD') init.body = request.body;
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    init.body = request.body;
+    // Nur fuer Node noetig (Stream-Body); Cloudflare ignoriert die Option.
+    init.duplex = 'half';
+  }
 
   let upstream;
   try {

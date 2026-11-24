@@ -138,6 +138,7 @@ test('POST auf /api/login behält Methode, Body und CSRF-Header', async () => {
     assert.equal(call.init.headers.get('x-csrf-token'), 'tok');
     assert.equal(call.init.headers.get('content-type'), 'application/json');
     assert.ok(call.init.body, 'Body wird weitergegeben');
+    assert.equal(call.init.duplex, 'half');
   } finally {
     mock.restore();
   }

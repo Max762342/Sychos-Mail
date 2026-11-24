@@ -104,9 +104,32 @@ meldet Status und API-Ziel.
 
 ```bash
 cd worker
-npm test                    # 9 Tests: Routing, Proxy, Cookies, 502-Fall, Redirect
+npm test                    # 10 Tests: Routing, Proxy, Cookies, 502-Fall, Redirect
+npx wrangler deploy --dry-run --outdir .dry   # Konfiguration prüfen (ohne Deploy)
 npx wrangler dev            # http://localhost:8787 (dist/ muss gefüllt sein)
 ```
+
+### Kompletter Durchlauf ohne Cloudflare (mit echtem Mailserver)
+
+`tools/check-worker-e2e.py` startet einen SSH-Tunnel zum Webmail auf dem Server,
+fährt den Worker lokal (`tools/preview-server.mjs`) mit den gebauten Assets und
+prüft die ganze Kette:
+
+```powershell
+python tools\check-worker-e2e.py --user admin@sychos.de --password <postfach-passwort>
+```
+
+```
+  OK    UI wird ausgeliefert  -> index.html + Sicherheits-Header
+  OK    /healthz  -> api=http://127.0.0.1:18080
+  OK    Login ueber den Proxy (Cookies)  -> angemeldet als admin@sychos.de
+  OK    Session bleibt gueltig
+  OK    /api/config
+  OK    SPA-Fallback
+```
+
+Damit ist bewiesen, dass statische Auslieferung, `/api`-Proxy, Cookies und
+SPA-Routing genau so funktionieren wie später auf Cloudflare.
 
 Ohne Cloudflare prüfen, ob der Proxy-Ursprung antwortet:
 
