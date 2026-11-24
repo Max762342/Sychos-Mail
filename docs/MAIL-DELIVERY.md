@@ -48,6 +48,14 @@ und lehnt direkte Zustellungen daraus grundsätzlich ab. Auch SPF/DKIM/PTR ände
 
 Nötig dafür: ein **IONOS-Postfach** auf `sychos.de` + dessen Passwort.
 
+> Achtung: Das **IONOS-Kundenkonto** (`maxyngrahn@gmail.com` + Kundenkennwort) ist
+> **kein** Mail-Login. Getestet am 24.11.2026:
+> `smtp.ionos.de:587 → 535 Authentication credentials invalid`,
+> `imap.ionos.de:993 → authentication failed`.
+> Ein Postfach ist eine Adresse **auf der Domain**, z. B. `info@sychos.de`,
+> `mail@sychos.de` oder `admin@sychos.de`, angelegt im IONOS Control Center
+> unter *E-Mail → Postfach*. Von dort bekommt man Adresse + Postfach-Passwort.
+
 ## Lösung B – richtiger Mailserver
 
 Ein VPS mit Port 25 und PTR (z. B. Hetzner/Netcup, ab ~4 €/Monat).
