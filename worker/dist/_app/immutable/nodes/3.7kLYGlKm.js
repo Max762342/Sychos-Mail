@@ -1,0 +1,1 @@
+import{W as e,lt as t,ut as n}from"../chunks/CnM5_Wmw.js";import{n as r}from"../chunks/DynrEp0H.js";import"../chunks/xihTtKlq.js";import"../chunks/C6EI9Qoe.js";function i(i,a){n(a,!0),e(()=>{r(`/mail?f=INBOX`,{replaceState:!0})}),t()}export{i as component};
