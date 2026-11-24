@@ -1,0 +1,28 @@
+# Root-Konfiguration fuer Cloudflare Workers Builds.
+#
+# Damit funktioniert `npx wrangler deploy` auch, wenn im Dashboard als
+# "Root directory" "/" eingetragen ist (Default). Der Worker liegt in worker/,
+# die gebaute UI in worker/dist/.
+#
+# Bewusst OHNE Domain-Routen: sychos.de liegt noch nicht in Cloudflare, sonst
+# bricht der Deploy mit "Could not find zone" ab. Sobald die Zone da ist,
+# entweder hier die routes ergaenzen oder im Dashboard Root directory = worker
+# setzen (dann greift worker/wrangler.toml mit den Routen).
+
+name = "sychos-mail"
+main = "worker/src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[assets]
+directory = "worker/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[vars]
+APP_NAME = "Sychos Mail"
+API_ORIGIN = "https://origin.sychos.de"
+
+[observability]
+enabled = true
