@@ -31,6 +31,9 @@ services:
       - "587:587"   # Submission (STARTTLS)
       - "993:993"   # IMAPS (Webmail, Mail-Clients)
       - "143:143"   # IMAP  (STARTTLS)
+      # LMTP nur lokal — der Injektor (stack/inject) liefert eingehende Mail
+      # aus Cloudflare Email Routing hier ab, ohne offenen Port 25.
+      - "127.0.0.1:8024:24"
     volumes:
       - dms-config:/tmp/docker-mailserver   # Konten, DKIM, Sieve, Quota
       - dms-mail:/var/mail                  # Maildirs

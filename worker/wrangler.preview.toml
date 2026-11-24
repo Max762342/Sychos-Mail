@@ -19,3 +19,4 @@ run_worker_first = true
 [vars]
 APP_NAME = "Sychos Mail"
 API_ORIGIN = "https://origin.sychos.de"
+INJECT_URL = "https://inject.sychos.de/inject"

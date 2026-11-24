@@ -186,6 +186,43 @@ test('/healthz meldet Status und API-Ziel', async () => {
   assert.equal(body.api, 'https://origin.sychos.de');
 });
 
+test('email(): schickt die Rohmail an den Injektor', async () => {
+  const raw = 'From: somebody <x@example.org>\r\nTo: admin@sychos.de\r\nSubject: Test\r\n\r\nHallo\r\n';
+  const message = {
+    to: 'admin@sychos.de',
+    from: 'x@example.org',
+    raw: new Response(raw).body,
+  };
+  const calls = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return new Response('{"ok":true}', { status: 200 });
+  };
+  try {
+    await worker.email(message, makeEnv({
+      INJECT_URL: 'https://inject.sychos.de/inject',
+      INJECT_SECRET: 'geheim',
+    }));
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://inject.sychos.de/inject');
+    assert.equal(calls[0].init.headers['x-inject-secret'], 'geheim');
+    const payload = JSON.parse(calls[0].init.body);
+    assert.deepEqual(payload.to, ['admin@sychos.de']);
+    const decoded = Buffer.from(payload.raw_b64, 'base64').toString('utf8');
+    assert.match(decoded, /Subject: Test/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('email(): Fehler ohne Secret', async () => {
+  await assert.rejects(
+    () => worker.email({ to: 'a@sychos.de', raw: new Response('x').body }, makeEnv()),
+    /INJECT/,
+  );
+});
+
 test('API_ORIGIN lässt sich überschreiben', async () => {
   const mock = mockFetch(upstreamOk);
   try {

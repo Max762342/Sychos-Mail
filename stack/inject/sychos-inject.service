@@ -1,0 +1,19 @@
+[Unit]
+Description=Sychos Mail Injektor (HTTPS -> LMTP)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+EnvironmentFile=/etc/sychos-inject.env
+ExecStart=/usr/bin/python3 /opt/sychos-mail/stack/inject/app.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -136,6 +136,41 @@ async function serveAssets(request, env) {
   });
 }
 
+function toBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Eingehende Mail von Cloudflare Email Routing.
+ * Statt Port 25 zu oeffnen, schickt der Worker die Rohmail per HTTPS an den
+ * Injektor (Tunnel -> 127.0.0.1:8099), der sie per LMTP in Dovecot ablegt.
+ */
+async function handleEmail(message, env) {
+  if (!env.INJECT_URL || !env.INJECT_SECRET) {
+    throw new Error('INJECT_URL/INJECT_SECRET nicht konfiguriert');
+  }
+  const raw = await new Response(message.raw).arrayBuffer();
+  const response = await fetch(env.INJECT_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-inject-secret': env.INJECT_SECRET,
+    },
+    body: JSON.stringify({ to: [message.to], raw_b64: toBase64(raw) }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    // Fehler weiterwerfen: Cloudflare informiert dann den Absender (Bounce).
+    throw new Error(`Injektor lehnte ab: ${response.status} ${detail}`);
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -161,5 +196,9 @@ export default {
     }
 
     return serveAssets(request, env);
+  },
+
+  async email(message, env) {
+    await handleEmail(message, env);
   },
 };

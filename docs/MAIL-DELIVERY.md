@@ -67,7 +67,47 @@ Ein VPS mit Port 25 und PTR (z. B. Hetzner/Netcup, ab ~4 €/Monat).
 5. SPF anpassen: `v=spf1 mx include:_spf-eu.ionos.com ~all`
 6. Cloudflare-Tunnel läuft weiter (zeigt auf den Host, nicht auf die IP) — Worker/UI unverändert
 
-## Nicht die Ursache (geprüft)
+## Lösung C – eingehende Mail ohne Port 25 (umgesetzt)
+
+Cloudflare Email Routing nimmt die Mail auf Port 25 an (Cloudflare-Netz) und
+übergibt sie an einen **Email Worker**, der sie per HTTPS über den Tunnel an
+einen kleinen **Injektor** auf dem Server schickt. Der legt sie per SMTP in
+Postfix/Dovecot ab — **kein offener Port, kein Portforwarding**.
+
+```
+Gmail -> MX: Cloudflare Email Routing (route1.mx.cloudflare.net)
+      -> Email Worker (sychos-mail, email-Handler)
+      -> POST https://inject.sychos.de/inject  (Shared Secret)
+      -> sychos-inject (127.0.0.1:8099)
+      -> SMTP 127.0.0.1:25 -> Postfix -> Rspamd -> Dovecot -> Webmail
+```
+
+Bestandteile:
+
+| Teil | Datei / Dienst |
+|---|---|
+| Injektor | `stack/inject/app.py`, Dienst `sychos-inject` (systemd), `127.0.0.1:8099` |
+| Secret | `/etc/sychos-inject.env` (root, 600) — muss in Cloudflare als `INJECT_SECRET` liegen |
+| Worker-Handler | `worker/src/index.js` → `email()` |
+| Tunnel-Ingress | `inject.sychos.de → http://127.0.0.1:8099` |
+| Installation | `bash scripts/inject-install.sh` |
+
+Getestet (24.11.2026): POST an `https://inject.sychos.de/inject` → `200`,
+Mail lag anschließend im Postfach `admin@sychos.de` (IMAP, Header unverändert).
+
+### Cloudflare-Schritte (einmalig, Dashboard)
+
+1. **Email → Email Routing → Enable** (setzt die MX-Records auf Cloudflare)
+2. **Routing → Catch-all address → Action: Send to a Worker → `sychos-mail`**
+3. **Workers → sychos-mail → Settings → Variables → Add → Secret**
+   `INJECT_SECRET` = Wert aus `/etc/sychos-inject.env`
+
+Danach erreicht jede Mail an `*@sychos.de` das Webmail — ohne Port 25.
+
+**Versand bleibt davon unberührt:** Gmail lehnt direkte Zustellung aus
+Privatanschluss-IPs ab. Dafür ist weiterhin ein Relay nötig (Lösung A, erster
+Befehl) oder ein VPS (Lösung B).
+
 
 * Port 25 ausgehend ist offen
 * DNS/Cloudflare/Worker: `sychos.de` liefert die UI, `/api/*` geht durch den Tunnel
