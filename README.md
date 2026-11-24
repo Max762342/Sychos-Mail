@@ -41,30 +41,33 @@ mail.sychos.de:993/465     direkt              IMAP/SMTP (kein Cloudflare)
   Tunnel zum Server. Details: [`docs/WORKER.md`](docs/WORKER.md)
 * **GitHub Pages** für eine statische Startseite (`pages/`)
 
-## Ist-Zustand (installiert und getestet)
+## Ist-Zustand (live, getestet)
 
 ```
-sychos-mailserver   Up (healthy)   25, 143, 465, 587, 993
-sychos-postgres     Up (healthy)   127.0.0.1:5432
-sychos-webmail      Up             127.0.0.1:8080   -> https://sychos.de (Tunnel)
-sychos-panel        systemd aktiv  127.0.0.1:8090   -> https://admin.sychos.de (Tunnel)
+https://sychos.de              Cloudflare Worker   Svelte-UI + /api-Proxy     (live)
+https://www.sychos.de          Worker              308 -> sychos.de           (live)
+https://origin.sychos.de       Tunnel (dbgate)     Webmail-Container          (API-Ursprung)
+https://admin.sychos.de        Tunnel (dbgate)     Control Panel              (live)
+mail.sychos.de:993/465         direkt              IMAP/SMTP
 ```
 
-* Postfach `admin@sychos.de` mit **3 GB** (`3145728 KB`, per `doveadm quota` geprüft)
-* IMAP-Login, SMTP 465, Submission 587 und Zustellung Postfach → Postfach getestet
-* Webmail-API-Login gegen den echten Mailserver: HTTP 200 + Session-Cookie
-* Panel-Selbsttest (`bash scripts/selftest.sh`) — alle Prüfungen grün
-* DKIM-Schlüssel für `sychos.de` erzeugt (Wert steht in den Zugangsdaten unter DNS)
-* **Worker**: 10/10 Unit-Tests, Wrangler-Dry-Run OK, E2E mit echtem Mailserver grün
-* **GitHub**: Repo öffentlich, Pages live, CI-Workflows grün
-  * Code: <https://github.com/kevu2256-design/sychos-mail>
-  * Startseite: <https://kevu2256-design.github.io/sychos-mail/>
+* **Cloudflare Worker** `sychos-mail` mit Routen `sychos.de/*` + `www.sychos.de/*`,
+  Deploy per Cloudflare Workers Builds (GitHub `Max762342/Sychos-Mail`)
+* **Tunnel** `dbgate` auf dem Server um `origin.sychos.de` (Webmail) und
+  `admin.sychos.de` (Panel) erweitert — `ssh.`/`friend.sychos.com` unverändert
+* **Postfach** `admin@sychos.de` mit **3 GB** (`3145728 KB`, per `doveadm quota` geprüft)
+* **Live-Check** (`python tools/verify-live.py --url https://sychos.de ...`):
+  UI 1835 B in 114 ms · `/healthz` ok · `/api/config` 200 · Login 200 + Cookie ·
+  `/api/folders` → 5 Ordner (IMAP erreichbar)
+* **Server:** `sychos-mailserver` healthy · `sychos-postgres` healthy ·
+  `sychos-webmail` up · `sychos-panel` (systemd) aktiv · `cloudflared` active
+* **GitHub Pages:** <https://max762342.github.io/Sychos-Mail/>
+* **DNS:** MX/SPF/`_dmarc` bei IONOS, DKIM-TXT `mail._domainkey.sychos.de` gesetzt
 * Zugangsdaten: `C:\Users\Schüler\Desktop\Sychos-Mail-Zugangsdaten.txt`
 
-**Offen (braucht deine Zugänge):** Cloudflare-Secrets im Repo
-(`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`), Domain zu Cloudflare ziehen,
-Tunnel starten (`bash scripts/cloudflare-setup.sh`), DNS-Einträge, Ports am Router.
-Details: `docs/DEPLOY.md`, `docs/WORKER.md` und `docs/DNS.md`.
+**Noch offen:** MX auf `mail.sychos.de` umstellen (sinnvoll erst, wenn Port 25
+am Anschluss erreichbar ist), PTR beim Anschluss setzen, echtes TLS-Zertifikat
+(`scripts/letsencrypt.sh`).
 
 ## Schnellstart (auf dem Server)
 
