@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Postfach angelegt · {{ app_name }}{% endblock %}
+{% block body %}
+<section class="panel highlight">
+  <h2>Postfach ist eingerichtet</h2>
+  <p class="muted">Diese Daten jetzt notieren — das Passwort wird nur einmal angezeigt.</p>
+
+  <dl class="data">
+    <dt>E-Mail-Adresse</dt><dd><code>{{ box.email }}</code></dd>
+    <dt>Passwort</dt><dd><code>{{ box.password }}</code>{% if box.generated %} <span class="muted small">(automatisch erzeugt)</span>{% endif %}</dd>
+    <dt>Speicher</dt><dd>{{ format_mb(box.quota_mb) }}</dd>
+  </dl>
+
+  <h3>Zugangsdaten für Mail-Programme</h3>
+  <dl class="data">
+    <dt>IMAP</dt><dd><code>mail.{{ domain }}</code> · Port <code>993</code> · SSL/TLS</dd>
+    <dt>SMTP</dt><dd><code>mail.{{ domain }}</code> · Port <code>465</code> · SSL/TLS <span class="muted small">(alternativ 587 STARTTLS)</span></dd>
+    <dt>Benutzername</dt><dd><code>{{ box.email }}</code></dd>
+    <dt>Webmail</dt><dd><a href="{{ webmail_url }}">{{ webmail_url }}</a></dd>
+  </dl>
+
+  <p><a class="button" href="{{ url_for('dashboard') }}">Zurück zur Übersicht</a></p>
+</section>
+{% endblock %}

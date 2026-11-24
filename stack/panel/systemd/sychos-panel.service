@@ -1,0 +1,25 @@
+[Unit]
+Description=Sychos Mail Control Panel
+Documentation=file:///opt/sychos-mail/README.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+SupplementaryGroups=docker
+WorkingDirectory=__BASE__/stack/panel
+EnvironmentFile=__BASE__/stack/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=__BASE__/stack/panel
+ExecStart=__BASE__/stack/panel/.venv/bin/gunicorn --workers 2 --threads 4 \
+  --timeout 180 --bind 127.0.0.1:8090 --access-logfile - --error-logfile - app:app
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,30 @@
+# --- Geheimnisse / lokal ---
+stack/.env
+stack/tls/
+stack/.acme/
+stack/cloudflared/config.yml
+stack/cloudflared/*.json
+stack/credentials.log
+stack/credentials.log.tmp
+stack/panel/.venv/
+tools/vps.env
+
+# --- Build-Artefakte ---
+node_modules/
+webmail/target/
+webmail/web/build/
+webmail/web/.svelte-kit/
+worker/dist/
+worker/.wrangler/
+worker/.dry/
+worker/package-lock.json
+**/__pycache__/
+*.pyc
+pnpm-install.log
+pnpm-build.log
+wrangler-dry.log
+wrangler-install.log
+
+# --- Betriebssystem ---
+.DS_Store
+Thumbs.db

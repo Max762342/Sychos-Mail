@@ -1,0 +1,16 @@
+{
+  "name": "sychos-mail-worker",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Sychos Mail Webseite auf Cloudflare (Worker + statische Svelte-UI, API-Proxy zum Mailserver)",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/worker.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

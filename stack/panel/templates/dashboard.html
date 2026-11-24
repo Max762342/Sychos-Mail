@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="cards">
+  <div class="card"><span>Postfächer</span><strong>{{ totals.konten }}</strong></div>
+  <div class="card"><span>Speicher gesamt</span><strong>{{ format_mb(totals.quota_summe) }}</strong></div>
+  <div class="card"><span>Belegt</span><strong>{{ format_mb(verbraucht) }}</strong></div>
+  <div class="card"><span>Domains</span><strong>{{ domains|length }}</strong></div>
+</section>
+
+{% if not container %}
+<div class="flash warn">
+  Docker ist für dieses Panel nicht erreichbar — Konten können gerade nicht
+  angelegt werden. Prüfen: <code>docker ps</code> und Gruppenmitgliedschaft
+  <code>docker</code>.
+</div>
+{% endif %}
+
+<section class="panel">
+  <h2>Neues Postfach</h2>
+  <form method="post" action="{{ url_for('create_mailbox') }}" class="grid-form">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Name
+      <div class="input-suffix">
+        <input name="local" placeholder="max" pattern="[a-z0-9][a-z0-9._\-]{0,29}[a-z0-9]"
+               required maxlength="31">
+        <span>@</span>
+        <select name="domain_id">
+          {% for d in domains %}<option value="{{ d.id }}" {{ 'selected' if loop.first }}>{{ d.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </label>
+    <label>Anzeigename <span class="muted">(optional)</span>
+      <input name="display_name" placeholder="Max Mustermann" maxlength="80">
+    </label>
+    <label>Speicher (MB)
+      <input type="number" name="quota_mb" value="{{ default_quota }}" min="100" max="1048576" step="128">
+    </label>
+    <label>Passwort <span class="muted">(leer = automatisch erzeugen)</span>
+      <input name="password" autocomplete="new-password" minlength="8" maxlength="128">
+    </label>
+    <button class="primary" type="submit">Postfach anlegen</button>
+  </form>
+
+  <details class="domainbox">
+    <summary>Weitere Domain hinzufügen</summary>
+    <form method="post" action="{{ url_for('add_domain') }}" class="row-form">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input name="name" placeholder="beispiel.de" required maxlength="120">
+      <button type="submit">Hinzufügen</button>
+    </form>
+    <p class="muted small">Danach MX, SPF, DKIM und DMARC im DNS setzen (Details in docs/DNS.md).</p>
+  </details>
+</section>
+
+<section class="panel">
+  <h2>Postfächer</h2>
+  {% if usage %}
+  <table class="boxes">
+    <thead>
+      <tr><th>Adresse</th><th>Speicher</th><th>Belegt</th><th class="actions">Aktionen</th></tr>
+    </thead>
+    <tbody>
+    {% for row in usage %}
+      {% set box = row.box %}
+      <tr>
+        <td>
+          <strong>{{ box.email }}</strong>
+          {% if box.display_name %}<br><span class="muted small">{{ box.display_name }}</span>{% endif %}
+        </td>
+        <td>{{ format_mb(box.quota_mb) }}</td>
+        <td>
+          {% if row.quota %}
+            {% set p = row.quota.pct %}
+            <div class="meter" title="{{ format_mb(row.quota.used_mb) }} von {{ format_mb(row.quota.limit_mb) }}">
+              <span style="width: {{ p }}%" class="{{ 'hot' if p >= 90 else ('warm' if p >= 70 else '') }}"></span>
+            </div>
+            <span class="muted small">{{ p }} % · {{ format_mb(row.quota.used_mb) }}</span>
+          {% else %}
+            <span class="muted small">n/a</span>
+          {% endif %}
+        </td>
+        <td class="actions">
+          <details>
+            <summary>verwalten</summary>
+            <div class="manage">
+              <form method="post" action="{{ url_for('reset_password', mid=box.id) }}" class="row-form">
+                <input type="hidden" name="csrf" value="{{ csrf }}">
+                <input name="password" placeholder="neues Passwort (leer = zufällig)" minlength="8">
+                <button type="submit">Passwort setzen</button>
+              </form>
+              <form method="post" action="{{ url_for('change_quota', mid=box.id) }}" class="row-form">
+                <input type="hidden" name="csrf" value="{{ csrf }}">
+                <input type="number" name="quota_mb" value="{{ box.quota_mb }}" min="100" max="1048576" step="128">
+                <button type="submit">Speicher setzen</button>
+              </form>
+              <form method="post" action="{{ url_for('delete_mailbox', mid=box.id) }}" class="row-form danger">
+                <input type="hidden" name="csrf" value="{{ csrf }}">
+                <input name="bestaetigung" placeholder="zum Löschen {{ box.email }} eintippen">
+                <button type="submit" class="danger">Löschen</button>
+              </form>
+            </div>
+          </details>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Noch keine Postfächer. Oben das erste anlegen — es bekommt
+    standardmäßig 3 GB Speicher.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,133 @@
+# Sychos Mail — kompletter Mailserver-Stack
+#
+#   mailserver   Postfix + Dovecot + Rspamd (docker-mailserver v15), Quota 3 GB/Postfach
+#   postgres     Login-/Account-Datenbank (Panel) + Webmail-Sessions
+#   webmail      Sychos Mail UI (Rust + Svelte, Fork von orshih6/webmail)
+#   panel        Sychos Control Panel (Postfächer anlegen/verwalten)
+#   cloudflared  Cloudflare Tunnel für sychos.de / admin.sychos.de
+#
+# Start:  docker compose up -d --build
+name: sychos-mail
+
+x-logging: &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ------------------------------------------------------------------ Mail --
+  mailserver:
+    image: ghcr.io/docker-mailserver/docker-mailserver:15
+    container_name: sychos-mailserver
+    hostname: ${MAIL_HOSTNAME:-mail.sychos.de}
+    env_file: mailserver.env
+    restart: unless-stopped
+    stop_grace_period: 1m
+    ports:
+      - "25:25"     # SMTP  (eingehende Mail — muss aus dem Internet erreichbar sein)
+      - "465:465"   # SMTPS (Webmail, Mail-Clients)
+      - "587:587"   # Submission (STARTTLS)
+      - "993:993"   # IMAPS (Webmail, Mail-Clients)
+      - "143:143"   # IMAP  (STARTTLS)
+    volumes:
+      - dms-config:/tmp/docker-mailserver   # Konten, DKIM, Sieve, Quota
+      - dms-mail:/var/mail                  # Maildirs
+      - dms-state:/var/lib/dovecot
+      - dms-logs:/var/log/mail
+      - ./tls:/etc/dms/tls:ro               # cert.pem + key.pem
+    networks:
+      mailnet:
+        aliases:
+          - mail.sychos.de
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/993' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    <<: *default-logging
+
+  # -------------------------------------------------------------- Datenbank --
+  postgres:
+    image: postgres:17-alpine
+    container_name: sychos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sychos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD in .env setzen}
+      POSTGRES_DB: panel
+      TZ: Europe/Berlin
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Nur lokal — das Control Panel läuft auf dem Host und verbindet sich hierhin.
+      - "127.0.0.1:5432:5432"
+    networks: [mailnet]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sychos -d panel"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    <<: *default-logging
+
+  # ----------------------------------------------------------------- Webmail --
+  webmail:
+    build:
+      context: ../webmail
+    image: sychos-mail-webmail:local
+    container_name: sychos-webmail
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailserver:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://sychos:${POSTGRES_PASSWORD}@postgres:5432/webmail
+      IMAP_HOST: ${WEBMAIL_IMAP_HOST:-mailserver}
+      IMAP_PORT: "993"
+      SMTP_HOST: ${WEBMAIL_IMAP_HOST:-mailserver}
+      SMTP_PORT: "465"
+      APP_NAME: ${APP_NAME:-Sychos Mail}
+      SOURCE_URL: ${SOURCE_URL:-https://github.com/orshih6/webmail}
+      # Der Verkehr bleibt im internen Docker-Netz auf diesem Host; das Zertifikat
+      # des Mailservers ist selbstsigniert. Mit echten Let's-Encrypt-Zertifikaten
+      # (scripts/letsencrypt.sh) auf 0 stellen.
+      TLS_ACCEPT_INVALID_CERTS: ${WEBMAIL_INSECURE_TLS:-1}
+      COOKIE_SECURE: ${WEBMAIL_COOKIE_SECURE:-1}
+      MAIL_TIMEOUT_SECS: "30"
+      MESSAGE_CACHE_MB: "128"
+      TZ: Europe/Berlin
+    ports:
+      # Nur lokal — der öffentliche Zugang läuft über den Cloudflare Tunnel.
+      - "127.0.0.1:${WEBMAIL_PORT:-8080}:8080"
+    networks: [mailnet]
+    <<: *default-logging
+
+  # ------------------------------------------------------------ Cloudflare --
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: sychos-cloudflared
+    restart: unless-stopped
+    # Host-Netz, damit der Tunnel 127.0.0.1:8080 (Webmail) und 127.0.0.1:8090
+    # (Panel) erreicht, ohne dass diese Ports im LAN offen sind.
+    network_mode: host
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    profiles: [tunnel]
+    <<: *default-logging
+
+networks:
+  mailnet:
+    name: sychos-mailnet
+
+volumes:
+  dms-config:
+  dms-mail:
+  dms-state:
+  dms-logs:
+  pgdata:

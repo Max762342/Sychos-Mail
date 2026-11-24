@@ -1,0 +1,9 @@
+# Geheimnisse — nie einchecken
+.env
+tls/
+.acme/
+cloudflared/config.yml
+cloudflared/*.json
+panel/.venv/
+**/__pycache__/
+*.pyc

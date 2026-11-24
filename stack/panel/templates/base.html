@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}Control Panel · {{ app_name }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">S</span> {{ app_name }}
+    <small>Control Panel</small></div>
+  {% if panel_email %}
+  <nav>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'on' if request.endpoint == 'dashboard' }}">Postfächer</a>
+    <a href="{{ url_for('system') }}" class="{{ 'on' if request.endpoint == 'system' }}">System</a>
+    <form method="post" action="{{ url_for('logout') }}" class="inline">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="link" type="submit">Abmelden · {{ panel_email }}</button>
+    </form>
+  </nav>
+  {% endif %}
+</header>
+
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+      {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  {% block body %}{% endblock %}
+</main>
+
+<footer>
+  {{ app_name }} · {{ domain }} — Mailserver: Postfix + Dovecot (docker-mailserver),
+  Webmail: Sychos Mail, Zugang über Cloudflare.
+</footer>
+</body>
+</html>

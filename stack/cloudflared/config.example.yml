@@ -1,0 +1,21 @@
+# Cloudflare Tunnel fuer Sychos Mail.
+# Wird von scripts/cloudflare-setup.sh aus config.example.yml erzeugt
+# (__TUNNEL_ID__ wird dabei ersetzt).
+#
+# Aufteilung:
+#   sychos.de, www.sychos.de   -> Cloudflare Worker (worker/, liefert die UI
+#                                 statisch aus und proxyiert /api/* hierher)
+#   origin.sychos.de           -> Webmail-Container  (API-Ziel des Workers)
+#   admin.sychos.de            -> Control Panel
+#
+# SMTP/IMAP laufen nicht ueber den Tunnel, sondern direkt ueber die
+# oeffentlichen Ports des Hosts — Cloudflare transportiert keine Mail.
+tunnel: __TUNNEL_ID__
+credentials-file: /etc/cloudflared/__TUNNEL_ID__.json
+
+ingress:
+  - hostname: origin.sychos.de
+    service: http://127.0.0.1:8080
+  - hostname: admin.sychos.de
+    service: http://127.0.0.1:8090
+  - service: http_status:404

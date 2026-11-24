@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Sychos Mail — E-Mail mit 3 GB pro Postfach</title>
+  <meta name="description" content="Sychos Mail: eigener Maildienst auf sychos.de — Webmail, IMAP/SMTP, 3 GB Speicher pro Postfach.">
+  <meta property="og:title" content="Sychos Mail">
+  <meta property="og:description" content="E-Mail mit 3 GB pro Postfach — Webmail, IMAP/SMTP, eigene Domain.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --card: #141c2b;
+      --line: #253048;
+      --text: #e8edf7;
+      --muted: #93a1bd;
+      --accent: #4f7cff;
+      --accent-2: #22d3ee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font: 16px/1.6 "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 12% -12%, #1a2540 0%, var(--bg) 58%) no-repeat,
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 32px 20px;
+    }
+    main { width: min(880px, 100%); }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+    .logo {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid; place-items: center;
+      box-shadow: 0 10px 30px rgba(79, 124, 255, .25);
+    }
+    .brand h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.01em; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: .95rem; }
+    .lead { font-size: 1.1rem; color: #cbd5ea; margin: 0 0 26px; max-width: 62ch; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+    .card {
+      background: linear-gradient(180deg, var(--card), #111827);
+      border: 1px solid var(--line); border-radius: 14px; padding: 18px;
+    }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .9rem; }
+    a.card { text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+    a.card:hover { border-color: #3550a0; transform: translateY(-2px); }
+    a.card .go { color: var(--accent-2); font-size: .9rem; display: inline-block; margin-top: 10px; }
+    dl { display: grid; grid-template-columns: 92px 1fr; gap: 6px 14px; margin: 12px 0 0; font-size: .9rem; }
+    dt { color: var(--muted); }
+    dd { margin: 0; font-family: ui-monospace, Consolas, monospace; }
+    code { font-family: ui-monospace, Consolas, monospace; }
+    footer { margin-top: 26px; color: #5d6b87; font-size: .82rem; }
+    footer a { color: #7f92b8; }
+    ul.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: .9rem; }
+    ul.checks li::before { content: "✓"; color: #34d399; margin-right: 8px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+        <rect x="8" y="16" width="48" height="34" rx="6" fill="#fff"/>
+        <path d="M13 21l19 14.5L51 21" stroke="#2b4bd6" stroke-width="4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Sychos Mail</h1>
+      <p>E-Mail auf eigener Domain — sychos.de</p>
+    </div>
+  </div>
+
+  <p class="lead">
+    Ein vollständiger Maildienst: Webmail im Browser, IMAP/SMTP für jedes
+    Mail-Programm, Spamfilter, Virenscan und <strong>3 GB Speicher pro Postfach</strong>.
+    Die Oberfläche läuft auf Cloudflare, die Postfächer auf einem eigenen Server.
+  </p>
+
+  <div class="grid">
+    <a class="card" href="https://sychos.de">
+      <h2>Webmail öffnen</h2>
+      <p>Im Browser anmelden und Mails lesen, schreiben, sortieren.</p>
+      <span class="go">https://sychos.de →</span>
+    </a>
+    <a class="card" href="https://admin.sychos.de">
+      <h2>Postfächer verwalten</h2>
+      <p>Control Panel: neue Postfächer anlegen, Passwörter und Speicher ändern.</p>
+      <span class="go">https://admin.sychos.de →</span>
+    </a>
+    <div class="card">
+      <h2>Mail-Programm einrichten</h2>
+      <dl>
+        <dt>IMAP</dt><dd>mail.sychos.de:993</dd>
+        <dt>SMTP</dt><dd>mail.sychos.de:465</dd>
+        <dt>Benutzer</dt><dd>name@sychos.de</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Enthalten</h2>
+      <ul class="checks">
+        <li>3 GB pro Postfach</li>
+        <li>Rspamd-Spamfilter &amp; ClamAV</li>
+        <li>DKIM, SPF, DMARC</li>
+        <li>Adressbuch, Entwürfe, Suche</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    Sychos Mail · Quellcode (AGPL-3.0) auf
+    <a href="https://github.com/orshih6/webmail">GitHub</a> ·
+    Betrieb: Postfix + Dovecot (docker-mailserver), Cloudflare Worker.
+  </footer>
+</main>
+</body>
+</html>

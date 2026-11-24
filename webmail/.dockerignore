@@ -1,0 +1,14 @@
+# Only the source the image is built from goes into the build context.
+target
+.git
+.env
+web/node_modules
+web/build
+web/.svelte-kit
+e2e
+dev
+docs
+deploy
+tests
+*.md
+!README.md

@@ -1,0 +1,65 @@
+name: Webseite auf Cloudflare deployen
+
+# Baut die Svelte-UI aus webmail/web und deployt den Worker (sychos.de,
+# www.sychos.de) mit den gebauten Assets.
+#
+# Benötigte Repository-Secrets:
+#   CLOUDFLARE_API_TOKEN   Token mit "Workers Scripts:Edit", "Workers Routes:Edit",
+#                          "Zone:Workers Routes:Edit" fuer sychos.de
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare Account-ID (Dashboard -> Workers)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'webmail/web/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: webmail/web/pnpm-lock.yaml
+
+      - name: UI bauen
+        working-directory: webmail/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Assets fuer den Worker bereitstellen
+        run: |
+          mkdir -p worker/dist
+          cp -r webmail/web/build/. worker/dist/
+          ls worker/dist
+
+      - name: Worker-Tests
+        working-directory: worker
+        run: node --test test/worker.test.mjs
+
+      - name: Auf Cloudflare deployen
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy
