@@ -69,7 +69,7 @@ def main() -> int:
         return 2
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("action", choices=["verify", "zones", "records", "fix-origin", "set", "accounts"])
+    ap.add_argument("action", choices=["verify", "zones", "records", "fix-origin", "set", "accounts", "del"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--no-proxy", action="store_true")
     args = ap.parse_args()
@@ -115,6 +115,24 @@ def main() -> int:
             sub = call(token, "GET", f"/accounts/{a['id']}/workers/subdomain")
             subdomain = (sub.get("result") or {}).get("subdomain", "?") if sub.get("success") else "kein Zugriff"
             print(f"  {a['name']:<24} id={a['id']}  workers.dev-Subdomain={subdomain}")
+        return 0
+
+    if args.action == "del":
+        if len(args.args) < 2:
+            print("Aufruf: del <zone> <name>")
+            return 2
+        zone, name = args.args[:2]
+        zid = zone_id(token, zone)
+        res = call(token, "GET", f"/zones/{zid}/dns_records?name={name}")
+        records = res.get("result") or []
+        if not records:
+            print("  nichts zu loeschen")
+            return 0
+        for rec in records:
+            out = call(token, "DELETE", f"/zones/{zid}/dns_records/{rec['id']}")
+            print(f"  geloescht: {rec['type']} {rec['name']}" if out.get("success") else "  Fehler")
+            if not out.get("success"):
+                show_errors(out)
         return 0
 
     if args.action == "fix-origin":
