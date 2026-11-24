@@ -34,3 +34,4 @@ e2e.out
 e2e.err
 *.log
 
+.g

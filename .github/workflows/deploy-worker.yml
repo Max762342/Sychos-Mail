@@ -56,7 +56,18 @@ jobs:
         working-directory: worker
         run: node --test test/worker.test.mjs
 
+      - name: Cloudflare-Secrets vorhanden?
+        id: guard
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "::notice title=Deploy uebersprungen::CLOUDFLARE_API_TOKEN fehlt. Unter Settings > Secrets and variables > Actions eintragen (siehe docs/WORKER.md)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Auf Cloudflare deployen
+        if: steps.guard.outputs.skip == 'false'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
