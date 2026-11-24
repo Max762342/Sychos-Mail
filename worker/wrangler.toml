@@ -28,7 +28,7 @@ run_worker_first = true
 APP_NAME = "Sychos Mail"
 # Tunnel-Ziel des Mailservers (cloudflared -> 127.0.0.1:8080).
 # Kann per Sekret ueberschrieben werden:  npx wrangler secret put API_ORIGIN
-API_ORIGIN = "https://origin.sychos.de"
+API_ORIGIN = "https://origin.sychos.com"
 
 [observability]
 enabled = true

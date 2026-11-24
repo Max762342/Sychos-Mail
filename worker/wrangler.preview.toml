@@ -18,4 +18,4 @@ run_worker_first = true
 
 [vars]
 APP_NAME = "Sychos Mail"
-API_ORIGIN = "https://origin.sychos.de"
+API_ORIGIN = "https://origin.sychos.com"
