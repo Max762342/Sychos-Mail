@@ -72,6 +72,7 @@ def main() -> int:
     ap.add_argument("action", choices=["verify", "zones", "records", "fix-origin", "set", "accounts", "del"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--no-proxy", action="store_true")
+    ap.add_argument("--prio", type=int, default=None, help="Prioritaet fuer MX-Records")
     args = ap.parse_args()
 
     if args.action == "verify":
@@ -169,6 +170,8 @@ def main() -> int:
         payload = {"type": rtype.upper(), "name": name, "content": content, "ttl": 1}
         if rtype.upper() in {"A", "AAAA", "CNAME"}:
             payload["proxied"] = not args.no_proxy
+        if rtype.upper() == "MX":
+            payload["priority"] = args.prio if args.prio is not None else 10
         res = call(token, "GET", f"/zones/{zid}/dns_records?name={name}&type={rtype.upper()}")
         existing = res.get("result") or []
         if existing:
