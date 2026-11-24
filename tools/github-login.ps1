@@ -15,13 +15,20 @@
   powershell -ExecutionPolicy Bypass -File tools\github-login.ps1 -RepoName sychos-mail -Public
   powershell -ExecutionPolicy Bypass -File tools\github-login.ps1 -NonInteractive
   powershell -ExecutionPolicy Bypass -File tools\github-login.ps1 -DryRun     # nur anzeigen
+  powershell -ExecutionPolicy Bypass -File tools\github-login.ps1 -Account kevu2256   # zu diesem Konto wechseln
+  powershell -ExecutionPolicy Bypass -File tools\github-login.ps1 -Switch    # neues Konto anmelden
 #>
 [CmdletBinding()]
 param(
     [string]$RepoName = "sychos-mail",
     [switch]$Public,
     [switch]$NonInteractive,
-    [switch]$DryRun
+    [switch]$DryRun,
+    # Konto wechseln
+    [string]$Account,
+    [switch]$Switch,
+    # Repo unter dem aktiven Konto neu anlegen und origin umbiegen
+    [switch]$RecreateRepo
 )
 
 $ErrorActionPreference = "Continue"
@@ -64,14 +71,59 @@ Write-Ok ((gh --version | Select-Object -First 1))
 
 # ------------------------------------------------------------- 2. Anmeldung --
 Write-Step "2/6 Anmeldung bei github.com"
-gh auth status 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Du wirst gleich zu GitHub weitergeleitet. Code im Browser bestaetigen."
-    gh auth login --hostname github.com --git-protocol https --web
-    if ($LASTEXITCODE -ne 0) { Write-Bad "Anmeldung fehlgeschlagen."; Stop-Here }
+$statusText = (gh auth status 2>&1 | Out-String)
+$known = @()
+foreach ($m in [regex]::Matches($statusText, 'account (\S+)')) {
+    if ($known -notcontains $m.Groups[1].Value) { $known += $m.Groups[1].Value }
 }
-$who = (gh api user --jq .login).Trim()
-Write-Ok "angemeldet als $who"
+if ($known.Count -gt 0) { Write-Host ("  bekannte Konten: " + ($known -join ", ")) }
+
+$needsLogin = ($LASTEXITCODE -ne 0) -or ($known.Count -eq 0)
+
+if ($Switch) {
+    Write-Host "Neues Konto anmelden (Browser/Device-Code) ..."
+    if ($DryRun) { Write-Skip "gh auth login --hostname github.com --git-protocol https --web" }
+    else {
+        gh auth login --hostname github.com --git-protocol https --web
+        if ($LASTEXITCODE -ne 0) { Write-Bad "Anmeldung fehlgeschlagen."; Stop-Here }
+    }
+} elseif ($Account) {
+    if ($known -contains $Account) {
+        Write-Host "Wechsle zu Konto $Account ..."
+        if ($DryRun) { Write-Skip "gh auth switch --user $Account" }
+        else {
+            gh auth switch --user $Account 2>&1 | ForEach-Object { "  $_" }
+            if ($LASTEXITCODE -ne 0) { Write-Bad "Wechsel zu $Account fehlgeschlagen."; Stop-Here }
+        }
+    } else {
+        Write-Warn2 "$Account ist auf diesem PC nicht angemeldet - starte Anmeldung"
+        if ($DryRun) { Write-Skip "gh auth login (Konto $Account)" }
+        else {
+            gh auth login --hostname github.com --git-protocol https --web
+            if ($LASTEXITCODE -ne 0) { Write-Bad "Anmeldung fehlgeschlagen."; Stop-Here }
+        }
+    }
+} elseif ($needsLogin) {
+    Write-Host "Du wirst gleich zu GitHub weitergeleitet. Code im Browser bestaetigen."
+    if ($DryRun) { Write-Skip "gh auth login --web" }
+    else {
+        gh auth login --hostname github.com --git-protocol https --web
+        if ($LASTEXITCODE -ne 0) { Write-Bad "Anmeldung fehlgeschlagen."; Stop-Here }
+    }
+}
+
+$who = (gh api user --jq .login 2>$null | Out-String).Trim()
+if (-not $who) { Write-Bad "Kein aktives GitHub-Konto ermittelbar."; Stop-Here }
+Write-Ok "aktives Konto: $who"
+
+# Git soll die Anmeldung der GitHub CLI benutzen (sonst greift ein alter
+# Windows-Credential-Manager-Eintrag und push geht als falscher Benutzer raus).
+if ($DryRun) { Write-Skip "gh auth setup-git --hostname github.com" }
+else {
+    gh auth setup-git --hostname github.com 2>&1 | Out-Null
+    $helper = (git config --global --get credential.helper 2>$null | Out-String).Trim()
+    Write-Ok "Git-Credential-Helper: $helper"
+}
 
 # --------------------------------------------------------------- 3. Scopes ---
 Write-Step "3/6 Token-Berechtigungen"
@@ -112,9 +164,25 @@ if (-not $NonInteractive) {
 gh repo view "$who/$RepoName" --json name 2>&1 | Out-Null
 $exists = ($LASTEXITCODE -eq 0)
 
+# Zeigt origin noch auf ein anderes Konto (nach einem Kontowechsel)?
+$remoteUrl = (git remote get-url origin 2>$null | Out-String).Trim()
+$remoteOwner = $null
+if ($remoteUrl -match "github\.com[/:]([^/]+)/([^/.]+)") { $remoteOwner = $matches[1] }
+
+if ($remoteOwner -and $remoteOwner -ne $who) {
+    if ($RecreateRepo) {
+        Write-Warn2 "origin zeigt auf $remoteOwner - lege $RepoName unter $who neu an"
+        $exists = $false
+    } else {
+        Write-Warn2 "origin zeigt auf $remoteOwner/$RepoName, aktives Konto ist $who"
+        Write-Host  "  Push-Rechte pruefen. Fuer ein neues Repo unter $who : -RecreateRepo"
+        $exists = $true
+    }
+}
+
 if ($exists) {
-    Write-Ok "Repository existiert bereits: $who/$RepoName"
-    if (-not ((git remote) -contains "origin")) {
+    Write-Ok "Repository: $who/$RepoName"
+    if (-not $remoteUrl) {
         if ($DryRun) { Write-Skip "git remote add origin https://github.com/$who/$RepoName.git" }
         else { git remote add origin "https://github.com/$who/$RepoName.git" }
     }
@@ -123,10 +191,17 @@ if ($exists) {
     if ($DryRun) {
         Write-Skip "gh repo create $RepoName --$visibility --source . --remote origin --push"
     } else {
-        gh repo create $RepoName "--$visibility" --source . --remote origin --push `
-            --description "Sychos Mail - Mailserver, Webmail, Cloudflare Worker"
-        if ($LASTEXITCODE -ne 0) { Write-Bad "Repository konnte nicht angelegt werden."; Stop-Here }
-        Write-Ok "angelegt und gepusht"
+        if ($remoteUrl) {
+            # origin existiert schon -> set-url statt add
+            gh repo create $RepoName "--$visibility" --description "Sychos Mail - Mailserver, Webmail, Cloudflare Worker" --source .
+            if ($LASTEXITCODE -ne 0) { Write-Bad "Repository konnte nicht angelegt werden."; Stop-Here }
+            git remote set-url origin "https://github.com/$who/$RepoName.git"
+        } else {
+            gh repo create $RepoName "--$visibility" --source . --remote origin --push `
+                --description "Sychos Mail - Mailserver, Webmail, Cloudflare Worker"
+            if ($LASTEXITCODE -ne 0) { Write-Bad "Repository konnte nicht angelegt werden."; Stop-Here }
+        }
+        Write-Ok "angelegt"
     }
 }
 
