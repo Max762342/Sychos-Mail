@@ -1,7 +1,7 @@
 # Webseite auf Cloudflare — Worker + GitHub
 
-**Status:** Repo <https://github.com/kevu2256-design/sychos-mail> (öffentlich),
-GitHub Pages live unter <https://kevu2256-design.github.io/sychos-mail/>.
+**Status:** Repo <https://github.com/Max762342/Sychos-Mail> (öffentlich),
+GitHub Pages live unter <https://max762342.github.io/Sychos-Mail/>.
 Der Worker ist gebaut und getestet; es fehlen nur noch die beiden
 Cloudflare-Secrets, damit `sychos.de` live geht.
 
@@ -50,6 +50,46 @@ startet den Tunnel mit dem neuen `config.yml` (origin + admin).
 Prüfen: `curl -I https://origin.sychos.de` → `HTTP/2 200`.
 
 ### 2. Repository auf GitHub
+
+Repo: <https://github.com/Max762342/Sychos-Mail> (öffentlich, Branch `main`).
+Ein Push auf `main` startet beide Workflows.
+
+### Variante A — Cloudflare baut selbst (Git-Integration, kein Token nötig)
+
+Cloudflare-Dashboard → **Workers & Pages → Create → Connect to Git** →
+GitHub autorisieren (Cloudflare-GitHub-App für das Repo freigeben) →
+Repo `Max762342/Sychos-Mail` wählen und einstellen:
+
+| Feld | Wert |
+|---|---|
+| Produktions-Branch | `main` |
+| Root-Verzeichnis | `worker` |
+| Build command | *leer lassen* (die fertige UI liegt unter `worker/dist`) |
+| Deploy command | `npx wrangler deploy --config wrangler.preview.toml` |
+
+`wrangler.preview.toml` = gleiche Konfiguration **ohne** Domain-Routen. Die
+Routen aus `wrangler.toml` (`sychos.de/*`) funktionieren erst, wenn die Zone in
+Cloudflare liegt — danach im Deploy-Command auf `npx wrangler deploy` wechseln.
+
+### Variante B — GitHub Actions deployt (braucht API-Token)
+
+Das ist der Weg, den `.github/workflows/deploy-worker.yml` vorbereitet. Nötig
+sind zwei Secrets:
+
+```powershell
+gh secret set CLOUDFLARE_API_TOKEN --repo Max762342/Sychos-Mail
+gh secret set CLOUDFLARE_ACCOUNT_ID --repo Max762342/Sychos-Mail
+```
+
+**Wozu der API-Token?** Er ist nur der Schlüssel, mit dem *GitHub* in deinem
+Namen bei Cloudflare deployen darf (CI/CD ohne Browser). Er hat nichts mit dem
+Mailserver zu tun. Wenn du Variante A nutzt, brauchst du ihn nicht.
+
+### Variante C — sofort von diesem PC aus deployen
+
+`Cloudflare-deploy.cmd` im Projektordner doppelklicken: macht `wrangler login`
+(Browser) und danach `wrangler deploy --config wrangler.preview.toml`.
+
 
 ```bash
 cd "C:\Users\Schüler\Desktop\Sychos Mail"
